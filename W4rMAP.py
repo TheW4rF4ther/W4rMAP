@@ -146,7 +146,7 @@ class NmapGUI(PyQt5.QtWidgets.QMainWindow):
             if custom_args:
                 command.extend(custom_args.split())
 
-            # Use subprocess.PIPE for both stdout and stderr
+            
             process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, bufsize=1,
                                        universal_newlines=True)
 
