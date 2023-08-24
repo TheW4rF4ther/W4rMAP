@@ -2,12 +2,18 @@ import sys
 import subprocess
 from PyQt5 import QtWidgets
 import PyQt5.QtWidgets
+import PyQt5.QtCore
 
 
 class NmapGUI(PyQt5.QtWidgets.QMainWindow):
     def __init__(self):
         super().__init__()
 
+        self.right_layout = None
+        self.right_widget = None
+        self.left_layout = None
+        self.left_widget = None
+        self.splitter = None
         self.summary_text = None
         self.result_text = None
         self.scan_button = None
@@ -24,19 +30,28 @@ class NmapGUI(PyQt5.QtWidgets.QMainWindow):
         self.ip_label = None
         self.layout = None
         self.central_widget = None
+        self.thread_pool = None  # Thread pool for managing tasks
         self.init_ui()
 
     def init_ui(self):
-        self.setWindowTitle('PyMAP - Created by W4rF4ther')
-        self.setGeometry(100, 100, 800, 600)
+        self.setWindowTitle('W4rMAP - Created by W4rF4ther')
+        self.setGeometry(100, 100, 1000, 600)  # Increased the width for a larger output section
 
         self.central_widget = PyQt5.QtWidgets.QWidget(self)
         self.setCentralWidget(self.central_widget)
 
         self.layout = PyQt5.QtWidgets.QHBoxLayout(self.central_widget)
 
-        self.left_layout = PyQt5.QtWidgets.QVBoxLayout()
-        self.layout.addLayout(self.left_layout)
+        self.splitter = PyQt5.QtWidgets.QSplitter(self.central_widget)
+        self.layout.addWidget(self.splitter)
+
+        self.left_widget = PyQt5.QtWidgets.QWidget()
+        self.left_layout = PyQt5.QtWidgets.QVBoxLayout(self.left_widget)
+        self.splitter.addWidget(self.left_widget)
+
+        self.right_widget = PyQt5.QtWidgets.QWidget()
+        self.right_layout = PyQt5.QtWidgets.QVBoxLayout(self.right_widget)
+        self.splitter.addWidget(self.right_widget)
 
         self.setStyleSheet("background-color: #210405; color: white;")
 
@@ -103,7 +118,9 @@ class NmapGUI(PyQt5.QtWidgets.QMainWindow):
 
         self.result_text = PyQt5.QtWidgets.QTextEdit()
         self.result_text.setStyleSheet("background-color: black; color: white;")
-        self.layout.addWidget(self.result_text)
+        self.right_layout.addWidget(self.result_text)
+
+        self.thread_pool = PyQt5.QtCore.QThreadPool()  # Initialize the thread pool
 
     def populate_script_combo(self):
         common_scripts = [
@@ -146,24 +163,28 @@ class NmapGUI(PyQt5.QtWidgets.QMainWindow):
             if custom_args:
                 command.extend(custom_args.split())
 
-            
-            process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, bufsize=1,
-                                       universal_newlines=True)
+            self.scan_button.setEnabled(False)  # Disable the scan button while the scan is running
 
-            while True:
-                line = process.stdout.readline()
-                if not line:
-                    break
-                self.result_text.append(line.rstrip())
-                self.result_text.verticalScrollBar().setValue(
-                    self.result_text.verticalScrollBar().maximum())  # Scroll to the bottom
-                self.result_text.repaint()  # Update the GUI to show real-time output
-                QtWidgets.QApplication.processEvents()  # Process other events to keep the GUI responsive
+            def run_scan_task():
+                process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True,
+                                           bufsize=1, universal_newlines=True)
 
-            process.communicate()  # Wait for the process to finish
+                while True:
+                    line = process.stdout.readline()
+                    if not line:
+                        break
+                    line = line.rstrip()
+                    PyQt5.QtCore.QMetaObject.invokeMethod(self.result_text, "append", PyQt5.QtCore.Q_ARG(str, line))
+                    QtWidgets.QApplication.processEvents()
 
-            if process.returncode != 0:
-                self.result_text.append(f"Process exited with error code: {process.returncode}")
+                process.communicate()
+                if process.returncode != 0:
+                    error_message = f"Process exited with error code: {process.returncode}"
+                    PyQt5.QtCore.QMetaObject.invokeMethod(self.result_text, "append", PyQt5.QtCore.Q_ARG(str, error_message))
+
+                self.scan_button.setEnabled(True)
+
+            self.thread_pool.start(run_scan_task)  # Start the scan task in a separate thread
 
         except Exception as e:
             self.result_text.setPlainText('Error: ' + str(e))
