@@ -3,6 +3,7 @@ import subprocess
 from PyQt5 import QtWidgets, QtGui, QtCore
 import PyQt5.QtWidgets
 import PyQt5.QtCore
+import re
 from PyQt5.QtGui import QPixmap
 import base64
 
@@ -209,14 +210,21 @@ class NmapGUI(PyQt5.QtWidgets.QMainWindow):
                     if not line:
                         break
                     line = line.rstrip()
-                    PyQt5.QtCore.QMetaObject.invokeMethod(self.result_text, "append", PyQt5.QtCore.Q_ARG(str, line))
+
+                    if re.search(r'\b(\d{1,5})/(tcp|udp)\s+open\s+(\S+)\b', line):
+                        formatted_line = re.sub(r'\b(\d{1,5})/(tcp|udp)\s+open\s+(\S+)\b',
+                                                r'<font color="#DB9DFF">\1</font>/\2 <font color="#FAC146">\3</font>',
+                                                line)
+                        PyQt5.QtCore.QMetaObject.invokeMethod(self.result_text, "append",
+                                                              PyQt5.QtCore.Q_ARG(str, formatted_line))
+                    else:
+                        PyQt5.QtCore.QMetaObject.invokeMethod(self.result_text, "append", PyQt5.QtCore.Q_ARG(str, line))
+
                     QtWidgets.QApplication.processEvents()
 
-                process.communicate()
-                if process.returncode != 0:
-                    error_message = f"Process exited with error code: {process.returncode}"
-                    PyQt5.QtCore.QMetaObject.invokeMethod(self.result_text, "append",
-                                                          PyQt5.QtCore.Q_ARG(str, error_message))
+
+
+
 
                 self.scan_button.setEnabled(True)
 
