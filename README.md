@@ -7,10 +7,13 @@ W4rMAP is a graphical user interface for the popular Network Mapper NMAP. This i
 NOTE: Expect bugs as this script is in active development.
 
 
-State of the Application as of 08-24-2023 can be seen below:
-![image](https://github.com/TheW4rF4ther/W4rMAP/assets/44712215/4dffc12e-66a6-473f-b5af-b1065b1a8f53)
+# State of the Application as of 08-24-2023 can be seen below:
 
-Current Functionality Includes the Below:
+![Selection_014](https://github.com/TheW4rF4ther/W4rMAP/assets/44712215/2c9871d1-474b-40d0-a254-fe46d705681c)
+
+
+
+# Current Functionality Includes the Below:
 - Scan multiple targets at the same time.
 - Easy select NMAP scan option flags.
 - Scan targets from a text file.
